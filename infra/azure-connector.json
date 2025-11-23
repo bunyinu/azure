@@ -27,7 +27,6 @@
   "variables": {
     "identityName": "[concat('gpubudget-', uniqueString(resourceGroup().id))]",
     "roleReader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
-    "roleBillingReader": "fa23ad3b-c56e-46d8-a1a8-41afd3956d4d",
     "roleVmContributor": "9980e02c-c2be-4d7c-930d-1bcfec824fab"
   },
   "resources": [
@@ -46,20 +45,6 @@
         "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal",
         "scope": "[resourceGroup().id]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Authorization/roleAssignments",
-      "apiVersion": "2022-04-01",
-      "name": "[guid(resourceGroup().id, 'gpubudget-billingreader', 'managed-identity')]",
-      "properties": {
-        "roleDefinitionId": "[concat(subscription().id, '/providers/Microsoft.Authorization/roleDefinitions/', variables('roleBillingReader'))]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').principalId]",
-        "principalType": "ServicePrincipal",
-        "scope": "[subscription().id]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"

@@ -14,6 +14,7 @@ TMP_KEY="$(mktemp)"
 PROJECT_IDS="${PROJECT_IDS:-}"
 AUTO_RUN="${AUTO_RUN:-false}"
 REPO_ROOT="$HOME/cloudshell_open"
+AUTH_TOKEN="${AUTH_TOKEN:-}"
 
 # If invoked from Cloud Shell magic link, ensure we are in the cloned repo
 if [[ -d "$REPO_ROOT" ]]; then
@@ -26,12 +27,13 @@ fi
 
 usage() {
   cat <<EOF
-Usage: ./gcp-cloudshell.sh [--projects proj1,proj2] [--allow-control true|false] [--auto-run true|false]
+Usage: ./gcp-cloudshell.sh [--projects proj1,proj2] [--allow-control true|false] [--auto-run true|false] [--auth-token TOKEN]
 Env vars:
   BACKEND_URL       Backend base URL (default: https://api.gpubudget.com)
   ALLOW_CONTROL     true to grant control roles; false for read-only (default: false)
   PROJECT_IDS       Comma-separated project IDs to onboard; if empty, you will be prompted
   AUTO_RUN          true to skip prompt and auto-select GPU projects (or first project)
+  AUTH_TOKEN        GpuBudget authentication token (required for backend submission)
 EOF
 }
 
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --auto-run)
       AUTO_RUN="$2"
+      shift 2
+      ;;
+    --auth-token)
+      AUTH_TOKEN="$2"
       shift 2
       ;;
     -h|--help)
@@ -135,6 +141,20 @@ if [[ ${#SELECTED[@]} -eq 0 ]]; then
   exit 1
 fi
 
+# Prompt for auth token if not provided
+if [[ -z "$AUTH_TOKEN" ]]; then
+  echo ""
+  echo "To submit credentials to GpuBudget, you need an authentication token."
+  echo "Get your token by logging in at ${BACKEND_URL%/api.*}/login or running:"
+  echo "  curl -X POST $BACKEND_URL/auth/magic-link -H 'Content-Type: application/json' -d '{\"email\":\"your@email.com\"}'"
+  echo ""
+  read -r -p "Enter your GpuBudget auth token (or press Enter to skip backend submission): " AUTH_TOKEN
+  if [[ -z "$AUTH_TOKEN" ]]; then
+    echo "Skipping backend submission. Service account will be created but not registered with GpuBudget."
+    echo "You can manually submit the credentials later."
+  fi
+fi
+
 for PROJECT_ID in "${SELECTED[@]}"; do
   echo "---- Onboarding project: $PROJECT_ID ----"
   echo "Enabling required APIs in $PROJECT_ID..."
@@ -176,16 +196,25 @@ for PROJECT_ID in "${SELECTED[@]}"; do
       service_account_info: ($sa_json | fromjson)
     }')
 
-  echo "Posting credentials to backend at $BACKEND_URL/cloud-accounts/gcp ..."
-  HTTP_STATUS=$(curl -s -o /tmp/gpubudget-onboard.log -w "%{http_code}" \
-    -X POST "$BACKEND_URL/cloud-accounts/gcp" \
-    -H "Content-Type: application/json" \
-    -d "$PAYLOAD")
+  if [[ -n "$AUTH_TOKEN" ]]; then
+    echo "Posting credentials to backend at $BACKEND_URL/cloud-accounts/gcp ..."
+    HTTP_STATUS=$(curl -s -o /tmp/gpubudget-onboard.log -w "%{http_code}" \
+      -X POST "$BACKEND_URL/cloud-accounts/gcp" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $AUTH_TOKEN" \
+      -d "$PAYLOAD")
 
-  if [[ "$HTTP_STATUS" -ge 200 && "$HTTP_STATUS" -lt 300 ]]; then
-    echo "Success! Account onboarded for project $PROJECT_ID."
+    if [[ "$HTTP_STATUS" -ge 200 && "$HTTP_STATUS" -lt 300 ]]; then
+      echo "Success! Account onboarded for project $PROJECT_ID."
+    else
+      echo "Backend responded with status $HTTP_STATUS. See /tmp/gpubudget-onboard.log for details." >&2
+      cat /tmp/gpubudget-onboard.log
+    fi
   else
-    echo "Backend responded with status $HTTP_STATUS. See /tmp/gpubudget-onboard.log for details." >&2
+    echo "Skipping backend submission (no auth token provided)."
+    echo "Service account created: $SA_EMAIL"
+    echo "To manually register, POST this payload to $BACKEND_URL/cloud-accounts/gcp with your auth token:"
+    echo "$PAYLOAD" | jq .
   fi
 done
 
