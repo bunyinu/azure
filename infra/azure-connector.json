@@ -1,10 +1,10 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-08-01/subscriptionDeploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "eastus",
+      "defaultValue": "[resourceGroup().location]",
       "metadata": {
         "description": "Region to place the managed identity."
       }
@@ -25,7 +25,7 @@
     }
   },
   "variables": {
-    "identityName": "[concat('gpubudget-', uniqueString(subscription().id))]",
+    "identityName": "[concat('gpubudget-', uniqueString(resourceGroup().id))]",
     "roleReader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
     "roleCostReader": "72fafb14-6a19-42a0-99f0-7b582404aef2",
     "roleVmContributor": "9980e02c-c2be-4d7c-930d-1bcfec824fab"
