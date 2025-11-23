@@ -19,57 +19,57 @@
   },
   "variables": {
     "roleReader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
-    "roleCostReader": "72fafb14-6af9-42a0-99f0-7b582404aef2",
+    "roleCostReader": "72fafb14-6a19-42a0-99f0-7b582404aef2",
     "roleVmContributor": "9980e02c-c2be-4d7c-930d-1bcfec824fab"
   },
   "resources": [
     {
       "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
       "apiVersion": "2023-01-31",
-      "name": "[concat('gpubudget-', uniqueString(resourceGroup().id))]",
-      "location": "[resourceGroup().location]"
+      "name": "[concat('gpubudget-', uniqueString(subscription().id))]",
+      "location": "[deployment().location]"
     },
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "name": "[guid(resourceGroup().id, 'gpubudget-reader', 'managed-identity')]",
+      "name": "[guid(subscription().id, 'gpubudget-reader', 'managed-identity')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleReader'))]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id))), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal",
-        "scope": "[resourceGroup().id]"
+        "scope": "[subscription().id]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id)))]"
       ]
     },
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "name": "[guid(resourceGroup().id, 'gpubudget-costreader', 'managed-identity')]",
+      "name": "[guid(subscription().id, 'gpubudget-costreader', 'managed-identity')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleCostReader'))]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id))), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal",
-        "scope": "[resourceGroup().id]"
+        "scope": "[subscription().id]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id)))]"
       ]
     },
     {
       "condition": "[parameters('allowControl')]",
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "name": "[guid(resourceGroup().id, 'gpubudget-vmcontrib', 'managed-identity')]",
+      "name": "[guid(subscription().id, 'gpubudget-vmcontrib', 'managed-identity')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleVmContributor'))]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id))), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal",
-        "scope": "[resourceGroup().id]"
+        "scope": "[subscription().id]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(subscription().id)))]"
       ]
     }
   ],
