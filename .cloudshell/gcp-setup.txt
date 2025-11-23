@@ -1,0 +1,11 @@
+🚀 GpuBudget GCP Auto-Setup
+======================================
+
+Setting up your GCP account with GpuBudget...
+
+This will:
+✓ Detect your GCP projects with GPU instances
+✓ Create a monitoring service account
+✓ Register credentials with GpuBudget
+
+Please wait while the setup completes automatically...

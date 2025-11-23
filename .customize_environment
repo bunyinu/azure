@@ -1,0 +1,114 @@
+#!/bin/bash
+# This file runs when Cloud Shell environment starts
+
+# Display welcome message and setup instructions
+cat << 'EOF'
+
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║          🚀 GpuBudget GCP Auto-Setup Ready!                   ║
+║                                                                ║
+║  To complete setup, run the command shown below ↓             ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+EOF
+
+# Check if TOKEN_ID is in the current shell's environment or URL
+# We'll create a helper that user can easily invoke
+cat > ~/run-gpubudget-setup.sh << 'SCRIPT'
+#!/bin/bash
+
+# Function to extract TOKEN_ID from various sources
+get_token_id() {
+    # Try to get from environment first
+    if [ -n "$TOKEN_ID" ]; then
+        echo "$TOKEN_ID"
+        return
+    fi
+
+    # Try to parse from Cloud Shell metadata
+    if [ -n "$CLOUD_SHELL" ]; then
+        # Check if there's a .token_id file we created
+        if [ -f ~/cloudshell_open/azure/.token_id ]; then
+            cat ~/cloudshell_open/azure/.token_id
+            return
+        fi
+    fi
+
+    # Prompt user
+    echo ""
+    echo "📋 Please enter your TOKEN_ID from the GpuBudget magic link:"
+    echo "   (It looks like: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
+    echo ""
+    read -p "TOKEN_ID: " user_token
+    echo "$user_token"
+}
+
+# Main setup flow
+echo "========================================="
+echo "🔑 Fetching your authentication token..."
+echo "========================================="
+echo ""
+
+TOKEN_ID=$(get_token_id)
+
+if [ -z "$TOKEN_ID" ]; then
+    echo "❌ No TOKEN_ID provided. Exiting."
+    exit 1
+fi
+
+# Fetch token from backend
+BACKEND_RESPONSE=$(curl -s "https://api.gpubudget.com/cloud-accounts/token/$TOKEN_ID")
+
+if echo "$BACKEND_RESPONSE" | grep -q '"token"'; then
+    export AUTH_TOKEN=$(echo "$BACKEND_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])" 2>/dev/null)
+    export BACKEND_URL=$(echo "$BACKEND_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('backend_url', 'https://api.gpubudget.com'))" 2>/dev/null)
+
+    if [ -n "$AUTH_TOKEN" ]; then
+        echo "✅ Authentication successful!"
+        echo "🚀 Starting GCP setup..."
+        echo ""
+
+        cd ~/cloudshell_open/azure* 2>/dev/null || cd ~/azure 2>/dev/null || {
+            echo "❌ Could not find setup directory"
+            exit 1
+        }
+
+        chmod +x gcp-cloudshell.sh
+        ./gcp-cloudshell.sh --auto-run
+    else
+        echo "❌ Failed to parse authentication token"
+        echo "Response: $BACKEND_RESPONSE"
+        exit 1
+    fi
+else
+    echo "❌ Failed to retrieve token from backend"
+    echo "Response: $BACKEND_RESPONSE"
+    echo ""
+    echo "Please check:"
+    echo "  1. Your TOKEN_ID is correct"
+    echo "  2. The token hasn't expired (valid for 1 hour)"
+    echo "  3. You're connected to the internet"
+    exit 1
+fi
+SCRIPT
+
+chmod +x ~/run-gpubudget-setup.sh
+
+# Create an easy alias
+echo "alias gpubudget='~/run-gpubudget-setup.sh'" >> ~/.bashrc
+
+# Display the command prominently
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "  👉  Run this command to start:"
+echo ""
+echo "      gpubudget"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Add to shell history so user can press UP arrow
+echo "gpubudget" >> ~/.bash_history
