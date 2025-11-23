@@ -13,6 +13,16 @@ SA_NAME="${SA_NAME:-gpubudget-connector}"
 TMP_KEY="$(mktemp)"
 PROJECT_IDS="${PROJECT_IDS:-}"
 AUTO_RUN="${AUTO_RUN:-false}"
+REPO_ROOT="$HOME/cloudshell_open"
+
+# If invoked from Cloud Shell magic link, ensure we are in the cloned repo
+if [[ -d "$REPO_ROOT" ]]; then
+  cd "$REPO_ROOT" || exit 1
+  latest_repo=$(ls -dt azure* 2>/dev/null | head -n 1)
+  if [[ -n "$latest_repo" && -d "$latest_repo" ]]; then
+    cd "$latest_repo" || exit 1
+  fi
+fi
 
 usage() {
   cat <<EOF
