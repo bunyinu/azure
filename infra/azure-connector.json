@@ -1,0 +1,94 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appDisplayName": {
+      "type": "string",
+      "defaultValue": "GpuBudget Connector",
+      "metadata": {
+        "description": "Display name for the service principal used by GpuBudget"
+      }
+    },
+    "allowControl": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Set true to allow stop/start; false keeps read-only"
+      }
+    }
+  },
+  "variables": {
+    "roleReader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
+    "roleCostReader": "72fafb14-6af9-42a0-99f0-7b582404aef2",
+    "roleVmContributor": "9980e02c-c2be-4d7c-930d-1bcfec824fab"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[concat('gpubudget-', uniqueString(resourceGroup().id))]",
+      "location": "[resourceGroup().location]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(subscription().id, 'gpubudget-reader', 'managed-identity')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleReader'))]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal",
+        "scope": "[subscription().id]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(subscription().id, 'gpubudget-costreader', 'managed-identity')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleCostReader'))]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal",
+        "scope": "[subscription().id]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "condition": "[parameters('allowControl')]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(subscription().id, 'gpubudget-vmcontrib', 'managed-identity')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleVmContributor'))]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal",
+        "scope": "[subscription().id]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id))), '2023-01-31').clientId]"
+    },
+    "managedIdentityResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('gpubudget-', uniqueString(resourceGroup().id)))]"
+    },
+    "tenantId": {
+      "type": "string",
+      "value": "[tenant().tenantId]"
+    },
+    "subscriptionId": {
+      "type": "string",
+      "value": "[subscription().subscriptionId]"
+    }
+  }
+}
