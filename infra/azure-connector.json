@@ -19,7 +19,7 @@
   },
   "variables": {
     "roleReader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
-    "roleCostReader": "72fafb14-6af9-42a0-99f0-7b582404aef2",
+    "roleCostReader": "72fafb14-6a19-42a0-99f0-7b582404aef2",
     "roleVmContributor": "9980e02c-c2be-4d7c-930d-1bcfec824fab"
   },
   "resources": [
