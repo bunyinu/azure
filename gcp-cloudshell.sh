@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-BACKEND_URL="${BACKEND_URL:-http://localhost:8000}"
+BACKEND_URL="${BACKEND_URL:-https://api.gpubudget.com}"
 ALLOW_CONTROL="${ALLOW_CONTROL:-false}"
 SA_NAME="${SA_NAME:-gpubudget-connector}"
 TMP_KEY="$(mktemp)"
